@@ -12,3 +12,4 @@ audio/
 # PyCharm 配置
 .idea/
 .DS_Store
+/memory_store/

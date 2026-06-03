@@ -52,7 +52,7 @@ def run_agent(user_text: str, messages : list) -> turtle:
             tools=tools,
         )
         message = response.choices[0].message
-        messages.append(message)
+        messages.append(message.model_dump()) ## 转为字典存入
         ## 循环执行
         if not message.tool_calls:
             return message.content, messages
