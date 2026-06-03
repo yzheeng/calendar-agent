@@ -1,0 +1,13 @@
+# 密钥，绝对不能提交
+.env
+
+# Python 虚拟环境和缓存
+.venv/
+__pycache__/
+*.pyc
+
+# 录音临时文件
+audio/
+
+# PyCharm 配置
+.idea/

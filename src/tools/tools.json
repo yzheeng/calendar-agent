@@ -1,0 +1,81 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "create_reminder",
+      "description": "创建一条提醒事项",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "提醒的标题"
+          },
+          "due": {
+            "type": "string",
+            "description": "截止时间，格式 2026-06-04 18:00，可选"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_reminders",
+      "description": "当用户想查看、修改或删除提醒前，用它列出当前所有提醒及其 id",
+      "parameters": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "delete_reminder",
+      "description": "删除指定id的提醒事项",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reminder_id": {
+            "type": "string",
+            "description": "提醒事项的id"
+          }
+        },
+        "required": [
+          "reminder_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_reminder",
+      "description": "根据id更新提醒事项",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reminder_id": {
+            "type": "string",
+            "description": "提醒事项的id"
+          },
+          "new_title": {
+            "type": "string",
+            "description": "新的标题"
+          },
+          "new_due": {
+            "type": "string",
+            "description": "新的due date， 格式为2026-06-04 18:00"
+          }
+        },
+        "required": [
+          "reminder_id"
+        ]
+      }
+    }
+  }
+]
