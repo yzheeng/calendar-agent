@@ -4,6 +4,7 @@ from src.memory.profile import update_profile
 from src.memory.session import  save_session
 from src.voice.record import record
 from src.voice.transcribe import transcribe
+from src.voice.tts import speak
 
 EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
@@ -25,6 +26,7 @@ def main():
         print(f"用户输入内容：{text}")
         reply, messages = run_agent(text, messages)
         print(f"助手：{reply}")
+        speak(reply)
 
     history = strip_system(messages)
     save_session(history)
