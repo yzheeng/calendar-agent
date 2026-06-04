@@ -1,5 +1,6 @@
 from src.agent.run_agent import run_agent, new_session
-from src.memory.memory import load_session, save_session
+from src.memory.profile import combine_profile, load_profile, save_profile
+from src.memory.session import load_session, save_session
 from src.voice.record import record
 from src.voice.transcribe import transcribe
 
@@ -7,8 +8,8 @@ EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 
 def main():
-    ## 获取历史session对话记录
-    messages = load_session()
+    profile = load_profile()
+    messages = new_session(profile)
 
     while True:
         try:
@@ -27,6 +28,7 @@ def main():
         print(f"助手：{reply}")
 
     save_session(messages)
+    save_profile(combine_profile(messages, profile))
 
 
 if __name__ == "__main__":
