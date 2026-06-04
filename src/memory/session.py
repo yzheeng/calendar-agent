@@ -8,14 +8,7 @@ from src.agent.prompt import _system_message, SYSTEM_PROMPT
 STORE_DIR = Path(__file__).resolve().parents[2] / "memory_store"
 SESSION_FILE = STORE_DIR / "session.json"
 
-def new_session(profile: dict | None = None) -> list:
-    msg = _system_message()
-    if profile:
-        msg["content"] += (
-            f"\n\n以下是该用户的长期偏好，安排时请参考：\n"
-            f"{json.dumps(profile, ensure_ascii=False)}"
-        )
-    return [msg]
+
 
 def save_session(messages: list) -> str:
     print("正在将当前session写入磁盘")
@@ -29,7 +22,7 @@ def save_session(messages: list) -> str:
 def load_session() -> list:
     """读回上次的会话；文件不存在(第一次运行)就返回一段全新会话。"""
     if not SESSION_FILE.exists():
-        return new_session()
+        return []
     with open(SESSION_FILE, encoding="utf-8") as f:
         return json.load(f)
 

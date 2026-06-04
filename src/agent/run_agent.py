@@ -3,7 +3,6 @@ import json
 import turtle
 
 from src.agent.prompt import _system_message
-from src.memory.session import new_session
 from src.tools.create_reminder import create_reminder
 from src.tools.delete_reminder import delete_reminder
 from src.tools.list_reminders import list_reminders
@@ -54,10 +53,3 @@ def run_agent(user_text: str, messages : list) -> turtle:
             })
 
 
-
-if __name__ == "__main__":
-    session = new_session()
-    reply, session = run_agent("提醒我明天下午3点开会", session)
-    print("助手：", reply)
-    reply, session = run_agent("把它改到4点", session)  # 依赖上一轮的记忆
-    print("助手：", reply)

@@ -34,8 +34,9 @@ def load_profile() -> dict:
         return dict(EMPTY_PROFILE)
 
 
-def combine_profile(messages : list, profile : dict) -> dict:
+def combine_profile(messages : list) -> dict:
     print("正在整理用户最新偏好")
+    profile = load_profile()
     # 1. 把素材都转成字符串（content 只收字符串，不收 dict）
     profile_text = json.dumps(profile, ensure_ascii=False)
     dialogue_text = json.dumps(messages, ensure_ascii=False)
@@ -57,9 +58,6 @@ def combine_profile(messages : list, profile : dict) -> dict:
     except (json.JSONDecodeError, TypeError):
         return profile
 
-
-
-
 def save_profile(profile: dict) -> str:
     print("正在保存用户最新偏好")
     """把档案写回磁盘，返回文件路径。"""
@@ -68,4 +66,7 @@ def save_profile(profile: dict) -> str:
         json.dump(profile, f, ensure_ascii=False, indent=2)
     return str(PROFILE_FILE)
 
+
+def update_profile(messages : list) -> str:
+    return save_profile(combine_profile(messages))
 

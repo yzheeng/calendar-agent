@@ -1,15 +1,14 @@
-from src.agent.run_agent import run_agent, new_session
-from src.memory.profile import combine_profile, load_profile, save_profile
-from src.memory.session import load_session, save_session
+from src.agent.context import assemble_context, strip_system
+from src.agent.run_agent import run_agent
+from src.memory.profile import update_profile
+from src.memory.session import  save_session
 from src.voice.record import record
 from src.voice.transcribe import transcribe
 
 EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
-
 def main():
-    profile = load_profile()
-    messages = new_session(profile)
+    messages = assemble_context()
 
     while True:
         try:
@@ -27,8 +26,9 @@ def main():
         reply, messages = run_agent(text, messages)
         print(f"助手：{reply}")
 
-    save_session(messages)
-    save_profile(combine_profile(messages, profile))
+    history = strip_system(messages)
+    save_session(history)
+    update_profile(history)
 
 
 if __name__ == "__main__":
