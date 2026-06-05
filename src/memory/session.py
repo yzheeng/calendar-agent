@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-from src.agent.prompt import _system_message, SYSTEM_PROMPT
 
 # 存储路径写死成模块级常量，save 和 load 共用同一处，杜绝路径不一致。
 # parents[2] 从本文件(src/memory/session.py)往上三级，正好到项目根目录。

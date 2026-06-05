@@ -1,15 +1,17 @@
-# src/agent/loop.py
 import json
-import turtle
+import os
 
+from dotenv import load_dotenv
 from src.agent.context import trim_messages
-from src.agent.prompt import _system_message
 from src.tools.create_reminder import create_reminder
 from src.tools.delete_reminder import delete_reminder
 from src.tools.list_reminders import list_reminders
 from src.tools.update_reminder import update_reminder
 from src.agent.llm import client
 from pathlib import Path
+
+load_dotenv()
+context_window = os.getenv("CONTEXT_WINDOW", default="20")
 
 TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
 with open(TOOLS_PATH, encoding="utf-8") as f:
@@ -41,7 +43,7 @@ def run_agent(user_text: str, messages: list) -> tuple[str, list]:
     while True:
         response = client.chat.completions.create(
             model="qwen-plus",
-            messages=trim_messages(messages, 20),
+            messages=trim_messages(messages, int(context_window)),
             tools=tools,
         )
         message = response.choices[0].message

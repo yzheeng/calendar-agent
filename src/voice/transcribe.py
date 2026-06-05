@@ -2,7 +2,6 @@ import os
 import uuid
 import base64
 import requests
-from pathlib import Path
 from dotenv import load_dotenv
 
 
