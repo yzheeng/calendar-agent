@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.agent.context import assemble_context, strip_system
 from src.agent.run_agent import run_agent
 from src.memory.profile import update_profile
@@ -5,12 +8,11 @@ from src.memory.session import  save_session
 from src.voice.record import record
 from src.voice.transcribe import transcribe
 from src.voice.tts import speak
-from dotenv import load_dotenv
 
 EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 def main():
-    load_dotenv()
+
     messages = assemble_context()
 
     while True:
