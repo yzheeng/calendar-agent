@@ -48,17 +48,26 @@ def get_first_tool_call_with_noise(user_text: str):
 # 每条用例：用户说的话 + 期望工具名 + 期望参数特征
 # due_offset_days: 期望日期相对"今天"偏移几天（None 表示不检查日期）
 # title_contains:  期望 title 里应包含的关键词（None 表示不检查）
-CASES = [
+# reminder_id:     期望 reminder_id 等于该值（None 表示不检查）
+COMMON_CASES = [
     {"input": "提醒我明天下午3点开会",
-     "expect_tool": "create_reminder", "title_contains": "开会", "due_offset_days": 1},
+     "expect_tool": "create_reminder", "title_contains": "开会", "due_offset_days": 1, "reminder_id": None},
     {"input": "帮我记一下后天上午十点跟王总开会",
-     "expect_tool": "create_reminder", "title_contains": "王总", "due_offset_days": 2},
+     "expect_tool": "create_reminder", "title_contains": "王总", "due_offset_days": 2, "reminder_id": None},
     {"input": "我今天有哪些提醒事项？",
-     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None},
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
     {"input": "把明天的开会提醒删掉",
-     "expect_tool": "delete_reminder", "title_contains": None, "due_offset_days": None},
+     "expect_tool": "delete_reminder", "title_contains": None, "due_offset_days": None, "reminder_id": None},
     {"input": "今天都安排了什么",
-     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None},
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+    {"input": "完成今天下午那个提醒",
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+]
+
+NOISE_ONLY_CASES = [
+    {"input": "把练腿标记完成了",
+     "expect_tool": "complete_reminder", "title_contains": None, "due_offset_days": None,
+     "reminder_id": "x-apple-reminder://" + "D" * 36},
 ]
 
 
@@ -99,19 +108,27 @@ def check_case(case: dict, with_noise: bool = False) -> tuple[bool, str]:
         if expected_date not in due:
             return False, f"due 日期不对：期望含 {expected_date}，实际 due=「{due}」"
 
+    if case["reminder_id"]:
+        reminder_id = args.get("reminder_id", "")
+        if reminder_id != case["reminder_id"]:
+            return False, f"reminder_id 不对：期望 {case['reminder_id']}，实际 reminder_id=「{reminder_id}」"
+
     return True, "通过"
 
 
 def main():
-    for label, noise in [("干净上下文", False), ("长噪声上下文", True)]:
+    for label, noise, cases in [
+        ("干净上下文", False, COMMON_CASES),
+        ("长噪声上下文", True, COMMON_CASES + NOISE_ONLY_CASES),
+    ]:
         passed = 0
         print(f"\n===== {label} =====")
-        for i, case in enumerate(CASES, 1):
+        for i, case in enumerate(cases, 1):
             ok, reason = check_case(case, with_noise=noise)
             print(f"[{i}] {'✅' if ok else '❌'} {case['input']}" + (f"  ← {reason}" if not ok else ""))
             passed += ok
-        print(f"通过率：{passed}/{len(CASES)} = {passed / len(CASES) * 100:.0f}%")
+        print(f"通过率：{passed}/{len(cases)} = {passed / len(cases) * 100:.0f}%")
 
 
 if __name__ == "__main__":
-    main()
+        main()

@@ -26,9 +26,28 @@
     "type": "function",
     "function": {
       "name": "list_reminders",
-      "description": "当用户想查看、修改或删除提醒前，用它列出当前所有提醒及其 id",
+      "description": "当用户想查看、修改、删除或完成提醒前，用它列出当前所有未完成提醒及其 id",
       "parameters": {
         "type": "object"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "complete_reminder",
+      "description": "标记指定id的提醒事项为已完成",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reminder_id": {
+            "type": "string",
+            "description": "提醒事项的id"
+          }
+        },
+        "required": [
+          "reminder_id"
+        ]
       }
     }
   },

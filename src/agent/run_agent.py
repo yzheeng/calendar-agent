@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from src.agent.context import trim_messages
+from src.tools.complete_reminder import complete_reminder
 from src.tools.create_reminder import create_reminder
 from src.tools.delete_reminder import delete_reminder
 from src.tools.list_reminders import list_reminders
@@ -18,6 +19,7 @@ with open(TOOLS_PATH, encoding="utf-8") as f:
     tools = json.load(f)
 
 TOOL_REGISTRY = {
+    "complete_reminder": complete_reminder,
     "create_reminder": create_reminder,
     "list_reminders": list_reminders,
     "delete_reminder": delete_reminder,
