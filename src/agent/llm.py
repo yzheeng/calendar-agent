@@ -1,8 +1,6 @@
 from openai import OpenAI
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 client = OpenAI(
     # 如果没有配置环境变量，请用阿里云百炼API Key替换：api_key="sk-xxx"

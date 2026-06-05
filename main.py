@@ -5,10 +5,12 @@ from src.memory.session import  save_session
 from src.voice.record import record
 from src.voice.transcribe import transcribe
 from src.voice.tts import speak
+from dotenv import load_dotenv
 
 EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 def main():
+    load_dotenv()
     messages = assemble_context()
 
     while True:

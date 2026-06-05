@@ -1,7 +1,7 @@
 import json
 import os
 
-from dotenv import load_dotenv
+
 from src.agent.context import trim_messages
 from src.tools.complete_reminder import complete_reminder
 from src.tools.create_reminder import create_reminder
@@ -11,7 +11,6 @@ from src.tools.update_reminder import update_reminder
 from src.agent.llm import client
 from pathlib import Path
 
-load_dotenv()
 context_window = os.getenv("CONTEXT_WINDOW", default="20")
 
 TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"

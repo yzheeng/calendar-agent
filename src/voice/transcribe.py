@@ -5,7 +5,6 @@ import requests
 from dotenv import load_dotenv
 
 
-load_dotenv()
 app_id=os.getenv("APP_ID")
 access_token=os.getenv("ACCESS_TOKEN")
 
