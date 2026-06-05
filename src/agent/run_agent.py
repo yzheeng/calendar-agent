@@ -11,7 +11,8 @@ from src.tools.update_reminder import update_reminder
 from src.agent.llm import client
 from pathlib import Path
 
-context_window = os.getenv("CONTEXT_WINDOW", default="20")
+context_window = int(os.getenv("CONTEXT_WINDOW", default="20"))
+max_steps = int(os.getenv("MAX_STEPS", default="5"))
 
 TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
 with open(TOOLS_PATH, encoding="utf-8") as f:
@@ -41,10 +42,10 @@ def execute_tool(name: str, args: dict) -> dict:
 def run_agent(user_text: str, messages: list) -> tuple[str, list]:
     messages.append({"role": "user", "content": user_text})
 
-    while True:
+    for _ in range(max_steps):
         response = client.chat.completions.create(
             model="qwen-plus",
-            messages=trim_messages(messages, int(context_window)),
+            messages=trim_messages(messages, context_window),
             tools=tools,
         )
         message = response.choices[0].message
@@ -68,3 +69,4 @@ def run_agent(user_text: str, messages: list) -> tuple[str, list]:
                 "tool_call_id": tool_call.id,
                 "content": json.dumps(result, ensure_ascii=False),
             })
+    return "我这会儿有点忙,你待会儿再说一遍", messages
