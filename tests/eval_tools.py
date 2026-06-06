@@ -46,22 +46,36 @@ def get_first_tool_call_with_noise(user_text: str):
 
 
 # 每条用例：用户说的话 + 期望工具名 + 期望参数特征
-# due_offset_days: 期望日期相对"今天"偏移几天（None 表示不检查日期）
-# title_contains:  期望 title 里应包含的关键词（None 表示不检查）
-# reminder_id:     期望 reminder_id 等于该值（None 表示不检查）
+# due_offset_days:   期望日期相对"今天"偏移几天（None 表示不检查日期）
+# title_contains:    期望 title 里应包含的关键词（None 表示不检查）
+# reminder_id:       期望 reminder_id 等于该值（None 表示不检查）
+# range_offset_days: 期望 list_reminders 的 (start_offset, end_offset)，按天数偏移今天
+# expect_no_range:   期望 list_reminders 不带 start/end（保护向后兼容）
 COMMON_CASES = [
     {"input": "提醒我明天下午3点开会",
      "expect_tool": "create_reminder", "title_contains": "开会", "due_offset_days": 1, "reminder_id": None},
     {"input": "帮我记一下后天上午十点跟王总开会",
      "expect_tool": "create_reminder", "title_contains": "王总", "due_offset_days": 2, "reminder_id": None},
     {"input": "我今天有哪些提醒事项？",
-     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "range_offset_days": (0, 0)},
     {"input": "把明天的开会提醒删掉",
      "expect_tool": "delete_reminder", "title_contains": None, "due_offset_days": None, "reminder_id": None},
     {"input": "今天都安排了什么",
-     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "range_offset_days": (0, 0)},
     {"input": "完成今天下午那个提醒",
-     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "range_offset_days": (0, 0)},
+    {"input": "明天有什么安排",
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "range_offset_days": (1, 1)},
+    {"input": "未来三天的提醒",
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "range_offset_days": (0, 3)},
+    {"input": "列一下所有提醒",
+     "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
+     "expect_no_range": True},
 ]
 
 NOISE_ONLY_CASES = [
@@ -112,6 +126,21 @@ def check_case(case: dict, with_noise: bool = False) -> tuple[bool, str]:
         reminder_id = args.get("reminder_id", "")
         if reminder_id != case["reminder_id"]:
             return False, f"reminder_id 不对：期望 {case['reminder_id']}，实际 reminder_id=「{reminder_id}」"
+
+    if case.get("range_offset_days") is not None:
+        s_off, e_off = case["range_offset_days"]
+        s_date = (datetime.now() + timedelta(days=s_off)).strftime("%Y-%m-%d")
+        e_date = (datetime.now() + timedelta(days=e_off)).strftime("%Y-%m-%d")
+        start = args.get("start", "")
+        end = args.get("end", "")
+        if s_date not in start:
+            return False, f"start 日期不对：期望含 {s_date}，实际 start=「{start}」"
+        if e_date not in end:
+            return False, f"end 日期不对：期望含 {e_date}，实际 end=「{end}」"
+
+    if case.get("expect_no_range"):
+        if args.get("start") or args.get("end"):
+            return False, f"期望不传时间范围，实际 start=「{args.get('start','')}」end=「{args.get('end','')}」"
 
     return True, "通过"
 

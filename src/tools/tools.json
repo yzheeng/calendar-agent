@@ -26,9 +26,23 @@
     "type": "function",
     "function": {
       "name": "list_reminders",
-      "description": "当用户想查看、修改、删除或完成提醒前，用它列出当前所有未完成提醒及其 id",
+      "description": "当用户想查看、修改、删除或完成提醒前，用它列出当前未完成提醒及其 id。用户提到时间范围时通过 start/end 参数缩小范围",
       "parameters": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "时间范围起点，格式 YYYY-MM-DD HH:MM，可选。例如「今天」用今天 00:00，「本周」用本周一 00:00，「明天」用明天 00:00。仅在用户提到时间范围时传入。"
+          },
+          "end": {
+            "type": "string",
+            "description": "时间范围终点，格式 YYYY-MM-DD HH:MM，可选。例如「今天」用今天 23:59，「本周」用周日 23:59，「未来三天」用第三天的 23:59。"
+          },
+          "include_undated": {
+            "type": "boolean",
+            "description": "是否一并返回没有截止时间的提醒，默认 false；仅在传了 start 或 end 时生效。"
+          }
+        }
       }
     }
   },
