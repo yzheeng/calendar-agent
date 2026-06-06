@@ -40,6 +40,7 @@ def execute_tool(name: str, args: dict) -> dict:
 
 
 def run_agent(user_text: str, messages: list) -> tuple[str, list]:
+    user_index = len(messages)  # 当前用户对话开启的位置
     messages.append({"role": "user", "content": user_text})
 
     for _ in range(max_steps):
@@ -69,4 +70,6 @@ def run_agent(user_text: str, messages: list) -> tuple[str, list]:
                 "tool_call_id": tool_call.id,
                 "content": json.dumps(result, ensure_ascii=False),
             })
+    # 兜底机制: 如果模型陷入了调用循环，无法停止。在达到max_step时，砍掉混乱的调用历史 只保留用户输入
+    del messages[user_index + 1:]
     return "我这会儿有点忙,你待会儿再说一遍", messages
