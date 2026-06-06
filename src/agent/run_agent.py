@@ -8,6 +8,7 @@ from src.tools.create_reminder import create_reminder
 from src.tools.delete_reminder import delete_reminder
 from src.tools.list_reminders import list_reminders
 from src.tools.update_reminder import update_reminder
+from src.tools.web_search import web_search
 from src.agent.llm import client
 from pathlib import Path
 
@@ -24,6 +25,7 @@ TOOL_REGISTRY = {
     "list_reminders": list_reminders,
     "delete_reminder": delete_reminder,
     "update_reminder": update_reminder,
+    "web_search": web_search,
 }
 
 

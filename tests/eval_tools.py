@@ -76,6 +76,20 @@ COMMON_CASES = [
     {"input": "列一下所有提醒",
      "expect_tool": "list_reminders", "title_contains": None, "due_offset_days": None, "reminder_id": None,
      "expect_no_range": True},
+    {"input": "杭州明天天气怎么样？",
+     "expect_tool": "web_search", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+    {"input": "今天美元对人民币多少？",
+     "expect_tool": "web_search", "title_contains": None, "due_offset_days": None, "reminder_id": None},
+]
+
+# 模糊用例：表面像「问外部世界」、实际不该走 web_search。
+# 用来观察模型加了联网工具之后会不会过度泛化。
+AMBIGUOUS_NO_SEARCH_CASES = [
+    {"input": "昨天是不是挺热的？", "expect_not_tool": "web_search"},
+    {"input": "下周三是几号？", "expect_not_tool": "web_search"},
+    {"input": "光速是多少？", "expect_not_tool": "web_search"},
+    {"input": "我明天有什么安排？", "expect_not_tool": "web_search"},
+    {"input": "你是谁啊？", "expect_not_tool": "web_search"},
 ]
 
 NOISE_ONLY_CASES = [
@@ -99,6 +113,12 @@ def get_first_tool_call(user_text: str):
 
 def check_case(case: dict, with_noise: bool = False) -> tuple[bool, str]:
     call = (get_first_tool_call_with_noise if with_noise else get_first_tool_call)(case["input"])
+
+    # 反例：只要求实际工具不等于 expect_not_tool（不调任何工具也算通过）
+    if case.get("expect_not_tool"):
+        if call is not None and call.function.name == case["expect_not_tool"]:
+            return False, f"不该调 {case['expect_not_tool']}，但调了"
+        return True, "通过"
 
     if call is None:
         return False, "没有调用任何工具"
@@ -147,8 +167,8 @@ def check_case(case: dict, with_noise: bool = False) -> tuple[bool, str]:
 
 def main():
     for label, noise, cases in [
-        ("干净上下文", False, COMMON_CASES),
-        ("长噪声上下文", True, COMMON_CASES + NOISE_ONLY_CASES),
+        ("干净上下文", False, COMMON_CASES + AMBIGUOUS_NO_SEARCH_CASES),
+        ("长噪声上下文", True, COMMON_CASES + NOISE_ONLY_CASES + AMBIGUOUS_NO_SEARCH_CASES),
     ]:
         passed = 0
         print(f"\n===== {label} =====")
