@@ -1,4 +1,9 @@
+import os
+
 from dotenv import load_dotenv
+
+from src.agent.llm import build_client
+from src.config.settings import load_settings
 
 load_dotenv()
 
@@ -13,8 +18,13 @@ EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 def main():
     messages = assemble_context()
-    state = {}
-    print("助手已启动，直接打字对话（输入 /help 看命令，/exit 退出）。")
+    # 加载默认llm设定
+    settings = load_settings()
+    client, model = build_client(settings)
+    print(f"助手已启动（模型：{model}），输入 /help 看命令，/exit 退出。")
+
+    # 全局状态 用于记录 client 和 model
+    state = {"settings" : settings, "client" : client, "model" : model}
 
     while True:
         try:
@@ -37,12 +47,12 @@ def main():
             print("助手已退出。")
             break
 
-        reply, messages = run_agent(text, messages)
+        reply, messages = run_agent(text, messages, state["client"], state["model"])
         print(f"助手：{reply}")
 
     history = strip_system(messages)
     save_session(history)
-    update_profile(history)
+    update_profile(history, state["client"], state["model"])
 
 
 if __name__ == "__main__":

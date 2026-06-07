@@ -9,7 +9,6 @@ from src.tools.delete_reminder import delete_reminder
 from src.tools.list_reminders import list_reminders
 from src.tools.update_reminder import update_reminder
 from src.tools.web_search import web_search
-from src.agent.llm import client
 from pathlib import Path
 
 context_window = int(os.getenv("CONTEXT_WINDOW", default="20"))
@@ -41,13 +40,13 @@ def execute_tool(name: str, args: dict) -> dict:
         return {"status": "fail", "message": f"工具执行出错：{e}"}
 
 
-def run_agent(user_text: str, messages: list) -> tuple[str, list]:
+def run_agent(user_text: str, messages: list, client, model: str) -> tuple[str, list]:
     user_index = len(messages)  # 当前用户对话开启的位置
     messages.append({"role": "user", "content": user_text})
 
     for _ in range(max_steps):
         response = client.chat.completions.create(
-            model="qwen-plus",
+            model=model,
             messages=trim_messages(messages, context_window),
             tools=tools,
         )

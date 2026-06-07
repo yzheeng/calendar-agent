@@ -1,18 +1,28 @@
-from openai import OpenAI
 import os
+from openai import OpenAI
 
 
-client = OpenAI(
-    # 如果没有配置环境变量，请用阿里云百炼API Key替换：api_key="sk-xxx"
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-)
+def build_client(settings: dict) -> tuple[OpenAI, str]:
+    """按传入的配置造 client，返回 (client, model)。
+    配置（model / base_url）来自 settings.json；密钥按约定从 .env 读。"""
+    mode = settings.get("mode", "remote")
 
-# messages = [{"role": "user", "content": "你是谁"}]
-# completion = client.chat.completions.create(
-#     model="qwen-plus",  # 您可以按需更换为其它深度思考模型
-#     messages=messages
-# )
-# print(completion.choices[0].message.content)
+    if mode == "local":
+        conf = settings["local"]
+        model = conf.get("model", "")
+        if not model:
+            raise RuntimeError(
+                "未配置本地模型名。请在 /model_setting 里填上你的模型名。"
+            )
+        client = OpenAI(api_key="local", base_url=conf["base_url"])
+        return client, model
 
+    if mode == "remote":
+        conf = settings["remote"]
+        api_key = os.getenv("DASHSCOPE_API_KEY")
+        if not api_key:
+            raise RuntimeError("未配置 DASHSCOPE_API_KEY，去 .env 里填一下。")
+        client = OpenAI(api_key=api_key, base_url=conf["base_url"])
+        return client, conf["model"]
 
+    raise ValueError(f"未知的 mode：{mode}（只支持 remote / local）")

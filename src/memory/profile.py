@@ -1,6 +1,5 @@
 from pathlib import Path
 import json
-from src.agent.llm import client
 
 STORE_DIR = Path(__file__).resolve().parents[2] / "memory_store"
 PROFILE_FILE = STORE_DIR / "profile.json"
@@ -34,7 +33,7 @@ def load_profile() -> dict:
         return dict(EMPTY_PROFILE)
 
 
-def combine_profile(messages : list) -> dict:
+def combine_profile(messages : list, client, model:str) -> dict:
     print("正在整理用户最新偏好")
     profile = load_profile()
     # 1. 把素材都转成字符串（content 只收字符串，不收 dict）
@@ -46,7 +45,7 @@ def combine_profile(messages : list) -> dict:
         {"role": "user", "content": f"已有档案：\n{profile_text}\n\n本次对话：\n{dialogue_text}"},
     ]
     response = client.chat.completions.create(
-        model="qwen-plus",
+        model=model,
         messages=merge_messages,
         response_format={"type": "json_object"},
     )
@@ -67,6 +66,6 @@ def save_profile(profile: dict) -> str:
     return str(PROFILE_FILE)
 
 
-def update_profile(messages : list) -> str:
-    return save_profile(combine_profile(messages))
+def update_profile(messages : list, client, model:str) -> str:
+    return save_profile(combine_profile(messages, client, model))
 

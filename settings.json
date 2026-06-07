@@ -1,0 +1,11 @@
+{
+  "mode": "remote",
+  "remote": {
+    "model": "qwen-plus",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  },
+  "local": {
+    "model": "",
+    "base_url": ""
+  }
+}
