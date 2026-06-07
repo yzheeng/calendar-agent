@@ -2,10 +2,13 @@ from src.cli.model_config import run_model_config
 
 def _cmd_help(args, state):
     print("可用命令：")
-    print("  /help           显示这个帮助")
-    print("  /status         显示当前模型 / 模式")
-    print("  /model_setting  进入模型配置（选 remote/local 并填写）")
-    print("  /exit           退出助手")
+    print("  /help            显示这个帮助")
+    print("  /status          显示当前模型 / 输入输出模式")
+    print("  /model_setting   进入模型配置")
+    print("  /input <text|voice>    切换输入模式")
+    print("  /output <text|voice>   切换输出模式")
+    print("  /voice           一键全语音    /text  一键全文本")
+    print("  /exit            退出助手")
     return "continue"
 
 
@@ -13,6 +16,7 @@ def _cmd_status(args, state):
     settings = state["settings"]
     print(f"当前模式：{settings['mode']}")
     print(f"当前模型：{state['model']}")
+    print(f"输入：{state['input_mode']}   输出：{state['output_mode']}")
     return "continue"
 
 
@@ -23,11 +27,49 @@ def _cmd_model_setting(args, state):
     run_model_config(state)
     return "continue"
 
+_VALID_IO = ("text", "voice")
+
+
+def _cmd_input(args, state):
+    if not args or args[0] not in _VALID_IO:
+        print(f"用法：/input text 或 /input voice（当前：{state['input_mode']}）")
+        return "continue"
+    state["input_mode"] = args[0]
+    print(f"输入模式已切换为：{args[0]}")
+    return "continue"
+
+
+def _cmd_output(args, state):
+    if not args or args[0] not in _VALID_IO:
+        print(f"用法：/output text 或 /output voice（当前：{state['output_mode']}）")
+        return "continue"
+    state["output_mode"] = args[0]
+    print(f"输出模式已切换为：{args[0]}")
+    return "continue"
+
+
+def _cmd_voice(args, state):
+    state["input_mode"] = "voice"
+    state["output_mode"] = "voice"
+    print("已切换为全语音模式（输入+输出都是语音）。说「退出」可结束。")
+    return "continue"
+
+
+def _cmd_text(args, state):
+    state["input_mode"] = "text"
+    state["output_mode"] = "text"
+    print("已切换为全文本模式（输入+输出都是文本）。")
+    return "continue"
+
 _REGISTRY = {
     "help": _cmd_help,
     "status": _cmd_status,
     "exit": _cmd_exit,
     "model_setting": _cmd_model_setting,
+    "input": _cmd_input,
+    "output": _cmd_output,
+    "voice": _cmd_voice,
+    "text": _cmd_text,
 }
 
 
