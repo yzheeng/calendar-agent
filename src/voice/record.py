@@ -28,10 +28,7 @@ import numpy as np
 from scipy.io.wavfile import write
 
 def record(output_path: str) -> str:
-    """
-    回车开始录音，再按回车停止。把录音存成 wav 文件，返回文件路径。
-    """
-    input("按回车开始录音...")
+    """开始录音，按回车停止。把录音存成 wav 文件，返回文件路径。"""
     print("录音中... 再次按回车停止")
 
     frames = []
@@ -40,9 +37,9 @@ def record(output_path: str) -> str:
         frames.append(indata.copy())
 
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, callback=callback):
-        input()  # 等回车停止，期间回调一直在后台攒数据
+        input()
 
-    if not frames:                       # 防止立刻按回车导致空录音
+    if not frames:
         recording = np.zeros((1, 1), dtype="float32")
     else:
         recording = np.concatenate(frames, axis=0)
@@ -52,5 +49,6 @@ def record(output_path: str) -> str:
     return output_path
 
 if __name__ == "__main__":
+    input("按回车开始录音...")
     audio = Path(__file__).resolve().parents[2] / "audio" / "recording.wav"
     record(str(audio))

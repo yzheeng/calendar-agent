@@ -1,3 +1,4 @@
+from src.cli.io_modes import persist_io_modes
 from src.cli.model_config import run_model_config
 
 def _cmd_help(args, state):
@@ -35,6 +36,7 @@ def _cmd_input(args, state):
         print(f"用法：/input text 或 /input voice（当前：{state['input_mode']}）")
         return "continue"
     state["input_mode"] = args[0]
+    persist_io_modes(state)
     print(f"输入模式已切换为：{args[0]}")
     return "continue"
 
@@ -44,6 +46,7 @@ def _cmd_output(args, state):
         print(f"用法：/output text 或 /output voice（当前：{state['output_mode']}）")
         return "continue"
     state["output_mode"] = args[0]
+    persist_io_modes(state)
     print(f"输出模式已切换为：{args[0]}")
     return "continue"
 
@@ -51,6 +54,7 @@ def _cmd_output(args, state):
 def _cmd_voice(args, state):
     state["input_mode"] = "voice"
     state["output_mode"] = "voice"
+    persist_io_modes(state)
     print("已切换为全语音模式（输入+输出都是语音）。说「退出」可结束。")
     return "continue"
 
@@ -58,6 +62,7 @@ def _cmd_voice(args, state):
 def _cmd_text(args, state):
     state["input_mode"] = "text"
     state["output_mode"] = "text"
+    persist_io_modes(state)
     print("已切换为全文本模式（输入+输出都是文本）。")
     return "continue"
 

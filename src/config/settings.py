@@ -1,12 +1,10 @@
-"""读写 settings.json：存可公开的配置（模型名、base_url、模式），不存密钥。
-密钥仍在 .env，由代码按约定去读。"""
 import json
 from pathlib import Path
 
-# settings.json 放在项目根目录（这个文件在 src/config/ 下，往上两级就是根）
+
 SETTINGS_PATH = Path(__file__).resolve().parents[2] / "settings.json"
 
-# 一份完整的默认配置。文件不存在或残缺时，用它兜底。
+# 一份完整的默认配置
 DEFAULTS = {
     "mode": "remote",
     "remote": {
@@ -16,6 +14,10 @@ DEFAULTS = {
     "local": {
         "model": "",
         "base_url": "",
+    },
+    "io": {
+        "input_mode": "text",
+        "output_mode": "text",
     },
 }
 

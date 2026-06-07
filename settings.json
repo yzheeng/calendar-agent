@@ -1,11 +1,15 @@
 {
   "mode": "remote",
   "remote": {
-    "model": "qwen-plus",
+    "model": "deepseek-v4-pro",
     "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
   },
   "local": {
     "model": "",
     "base_url": ""
+  },
+  "io": {
+    "input_mode": "voice",
+    "output_mode": "voice"
   }
 }
