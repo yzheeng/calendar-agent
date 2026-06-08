@@ -19,6 +19,8 @@ EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 def main():
     messages = assemble_context()
+    # 排除头部 system 后, 一有对话的长度
+    baseline_len = sum(1 for m in messages if m.get("role") != "system")
     # 加载默认llm设定
     settings = load_settings()
     client, model = build_client(settings)
@@ -33,6 +35,7 @@ def main():
         "output_mode": settings["io"]["output_mode"],
         "context_window": settings["agent"]["context_window"],
         "messages": messages,
+        "baseline_len": baseline_len,
     }
 
     while True:
@@ -66,7 +69,8 @@ def main():
 
     history = strip_system(state["messages"])
     save_session(history)
-    update_profile(history, state["client"], state["model"])
+    new_messages = history[state["baseline_len"]:]
+    update_profile(new_messages, state["client"], state["model"])
 
 
 if __name__ == "__main__":

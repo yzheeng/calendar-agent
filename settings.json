@@ -10,7 +10,7 @@
   },
   "io": {
     "input_mode": "text",
-    "output_mode": "voice"
+    "output_mode": "text"
   },
   "agent": {
     "context_window": 20

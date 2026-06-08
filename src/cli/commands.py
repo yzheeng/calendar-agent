@@ -80,6 +80,7 @@ def _cmd_text(args, state):
 def _cmd_clear_context(args, state):
     clear_session()
     state["messages"] = assemble_context()
+    state["baseline_len"] = 0
     print("已清空当前会话上下文。")
     return "continue"
 
