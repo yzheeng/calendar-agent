@@ -9,7 +9,7 @@
     "base_url": ""
   },
   "io": {
-    "input_mode": "voice",
+    "input_mode": "text",
     "output_mode": "voice"
   }
 }

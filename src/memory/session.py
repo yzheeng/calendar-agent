@@ -26,5 +26,13 @@ def load_session() -> list:
         return json.load(f)
 
 
+def clear_session() -> str:
+    """清空当前会话历史：把 session.json 写成空列表。返回文件路径。"""
+    STORE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SESSION_FILE, "w", encoding="utf-8") as f:
+        json.dump([], f, ensure_ascii=False, indent=2)
+    return str(SESSION_FILE)
+
+
 if __name__ == "__main__":
     save_session([{"role":"user","content":"测试中文"}])

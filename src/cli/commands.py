@@ -1,5 +1,7 @@
+from src.agent.context import assemble_context
 from src.cli.io_modes import persist_io_modes
 from src.cli.model_config import run_model_config
+from src.memory.session import clear_session
 
 def _cmd_help(args, state):
     print("可用命令：")
@@ -8,7 +10,9 @@ def _cmd_help(args, state):
     print("  /model_setting   进入模型配置")
     print("  /input <text|voice>    切换输入模式")
     print("  /output <text|voice>   切换输出模式")
-    print("  /voice           一键全语音    /text  一键全文本")
+    print("  /voice           一键全语音")
+    print("  /text            一键全文本")
+    print("  /clear_context   清空当前会话上下文")
     print("  /exit            退出助手")
     return "continue"
 
@@ -66,6 +70,13 @@ def _cmd_text(args, state):
     print("已切换为全文本模式（输入+输出都是文本）。")
     return "continue"
 
+
+def _cmd_clear_context(args, state):
+    clear_session()
+    state["messages"] = assemble_context()
+    print("已清空当前会话上下文。")
+    return "continue"
+
 _REGISTRY = {
     "help": _cmd_help,
     "status": _cmd_status,
@@ -75,6 +86,7 @@ _REGISTRY = {
     "output": _cmd_output,
     "voice": _cmd_voice,
     "text": _cmd_text,
+    "clear_context": _cmd_clear_context,
 }
 
 

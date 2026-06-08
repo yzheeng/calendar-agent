@@ -31,6 +31,7 @@ def main():
         "settings": settings,
         "input_mode": settings["io"]["input_mode"],
         "output_mode": settings["io"]["output_mode"],
+        "messages": messages,
     }
 
     while True:
@@ -57,10 +58,10 @@ def main():
             print("助手已退出。")
             break
         # 调用模型
-        reply, messages = run_agent(text, messages, state["client"], state["model"])
+        reply, state["messages"] = run_agent(text, state["messages"], state["client"], state["model"])
         deliver_output(reply, state)
 
-    history = strip_system(messages)
+    history = strip_system(state["messages"])
     save_session(history)
     update_profile(history, state["client"], state["model"])
 
