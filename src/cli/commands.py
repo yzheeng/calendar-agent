@@ -1,6 +1,10 @@
+import json
+
 from src.agent.context import assemble_context
 from src.cli.io_modes import persist_io_modes
 from src.cli.model_config import run_model_config
+from src.config.settings import save_settings
+from src.memory.profile import load_profile
 from src.memory.session import clear_session
 
 def _cmd_help(args, state):
@@ -12,6 +16,8 @@ def _cmd_help(args, state):
     print("  /output <text|voice>   切换输出模式")
     print("  /voice           一键全语音")
     print("  /text            一键全文本")
+    print("  /profile         查看当前用户长期偏好")
+    print("  /set_context <n> 设置上下文滑动窗口大小")
     print("  /clear_context   清空当前会话上下文")
     print("  /exit            退出助手")
     return "continue"
@@ -77,6 +83,32 @@ def _cmd_clear_context(args, state):
     print("已清空当前会话上下文。")
     return "continue"
 
+
+def _cmd_profile(args, state):
+    profile = load_profile()
+    print(json.dumps(profile, ensure_ascii=False, indent=2))
+    return "continue"
+
+
+def _cmd_set_context(args, state):
+    if not args or not args[0].isdigit():
+        print(f"用法：/set_context <正整数>（当前：{state['context_window']}）")
+        return "continue"
+    n = int(args[0])
+    if n < 2:
+        print("窗口至少 2 条。")
+        return "continue"
+    state["context_window"] = n
+    state["settings"]["agent"]["context_window"] = n
+    try:
+        save_settings(state["settings"])
+    except OSError as e:
+        print(f"提醒：保存窗口大小失败（{e}），仅本次会话生效。")
+        return "continue"
+    print(f"上下文窗口已设为 {n}。下一轮对话生效。")
+    return "continue"
+
+
 _REGISTRY = {
     "help": _cmd_help,
     "status": _cmd_status,
@@ -86,6 +118,8 @@ _REGISTRY = {
     "output": _cmd_output,
     "voice": _cmd_voice,
     "text": _cmd_text,
+    "profile": _cmd_profile,
+    "set_context": _cmd_set_context,
     "clear_context": _cmd_clear_context,
 }
 

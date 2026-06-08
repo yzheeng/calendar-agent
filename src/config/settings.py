@@ -19,6 +19,9 @@ DEFAULTS = {
         "input_mode": "text",
         "output_mode": "text",
     },
+    "agent": {
+        "context_window": 20,
+    },
 }
 
 

@@ -11,7 +11,6 @@ from src.tools.update_reminder import update_reminder
 from src.tools.web_search import web_search
 from pathlib import Path
 
-context_window = int(os.getenv("CONTEXT_WINDOW", default="20"))
 max_steps = int(os.getenv("MAX_STEPS", default="5"))
 
 TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
@@ -40,7 +39,7 @@ def execute_tool(name: str, args: dict) -> dict:
         return {"status": "fail", "message": f"工具执行出错：{e}"}
 
 
-def run_agent(user_text: str, messages: list, client, model: str) -> tuple[str, list]:
+def run_agent(user_text: str, messages: list, client, model: str, context_window: int) -> tuple[str, list]:
     user_index = len(messages)  # 当前用户对话开启的位置
     messages.append({"role": "user", "content": user_text})
 

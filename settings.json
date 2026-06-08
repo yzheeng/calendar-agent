@@ -11,5 +11,8 @@
   "io": {
     "input_mode": "text",
     "output_mode": "voice"
+  },
+  "agent": {
+    "context_window": 20
   }
 }

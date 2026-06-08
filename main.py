@@ -31,6 +31,7 @@ def main():
         "settings": settings,
         "input_mode": settings["io"]["input_mode"],
         "output_mode": settings["io"]["output_mode"],
+        "context_window": settings["agent"]["context_window"],
         "messages": messages,
     }
 
@@ -58,7 +59,9 @@ def main():
             print("助手已退出。")
             break
         # 调用模型
-        reply, state["messages"] = run_agent(text, state["messages"], state["client"], state["model"])
+        reply, state["messages"] = run_agent(
+            text, state["messages"], state["client"], state["model"], state["context_window"]
+        )
         deliver_output(reply, state)
 
     history = strip_system(state["messages"])
