@@ -26,7 +26,7 @@ def main():
     client, model = build_client(settings)
     print(f"助手已启动（模型：{model}），输入 /help 看命令，/exit 退出。")
 
-    # 全局状态 用于记录 client 和 model
+    # 全局状态
     state = {
         "client": client,
         "model": model,

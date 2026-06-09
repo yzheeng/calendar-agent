@@ -1,9 +1,11 @@
+from pathlib import Path
+
 from src.config.settings import save_settings
 from src.voice.record import record
 from src.voice.transcribe import transcribe
 from src.voice.tts import speak
 
-AUDIO_PATH = "audio/recording.wav"
+AUDIO_PATH = str(Path(__file__).resolve().parents[2] / "audio" / "recording.wav")
 
 # 输入源 / 输出口的分发。按 state 里的模式决定走文本还是语音。
 

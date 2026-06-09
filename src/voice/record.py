@@ -44,9 +44,11 @@ def record(output_path: str) -> str:
     else:
         recording = np.concatenate(frames, axis=0)
 
-    write(output_path, SAMPLE_RATE, recording)
-    print(f"录音已保存：{output_path}")
-    return output_path
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write(out, SAMPLE_RATE, recording)
+    print(f"录音已保存：{out}")
+    return str(out)
 
 if __name__ == "__main__":
     input("按回车开始录音...")

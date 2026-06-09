@@ -9,8 +9,8 @@
     "base_url": ""
   },
   "io": {
-    "input_mode": "text",
-    "output_mode": "text"
+    "input_mode": "voice",
+    "output_mode": "voice"
   },
   "agent": {
     "context_window": 20
