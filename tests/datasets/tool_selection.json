@@ -1,0 +1,21 @@
+[
+  {"input": "提醒我明天下午3点开会", "expect": {"tool": "create_reminder", "title_contains": "开会", "due_offset_days": 1}},
+  {"input": "帮我记一下后天上午十点跟王总开会", "expect": {"tool": "create_reminder", "title_contains": "王总", "due_offset_days": 2}},
+  {"input": "我今天有哪些提醒事项？", "expect": {"tool": "list_reminders", "range_offset_days": [0, 0]}},
+  {"input": "把明天的开会提醒删掉", "expect": {"tool": "delete_reminder"}},
+  {"input": "今天都安排了什么", "expect": {"tool": "list_reminders", "range_offset_days": [0, 0]}},
+  {"input": "完成今天下午那个提醒", "expect": {"tool": "list_reminders", "range_offset_days": [0, 0]}},
+  {"input": "明天有什么安排", "expect": {"tool": "list_reminders", "range_offset_days": [1, 1]}},
+  {"input": "未来三天的提醒", "expect": {"tool": "list_reminders", "range_offset_days": [0, 3]}},
+  {"input": "列一下所有提醒", "expect": {"tool": "list_reminders", "expect_no_range": true}},
+  {"input": "杭州明天天气怎么样？", "expect": {"tool": "web_search"}},
+  {"input": "今天美元对人民币多少？", "expect": {"tool": "web_search"}},
+
+  {"input": "昨天是不是挺热的？", "expect": {"not_tool": "web_search"}},
+  {"input": "下周三是几号？", "expect": {"not_tool": "web_search"}},
+  {"input": "光速是多少？", "expect": {"not_tool": "web_search"}},
+  {"input": "我明天有什么安排？", "expect": {"not_tool": "web_search"}},
+  {"input": "你是谁啊？", "expect": {"not_tool": "web_search"}},
+
+  {"input": "把练腿标记完成了", "requires_noise": true, "expect": {"tool": "complete_reminder", "reminder_id": "x-apple-reminder://DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"}}
+]
