@@ -28,7 +28,10 @@ def get_input(state: dict) -> str:
 def deliver_output(text: str, state: dict) -> None:
     print(f"助手：{text}")
     if state["output_mode"] == "voice":
-        speak(text)
+        try:
+            speak(text)
+        except Exception as e:
+            print(f"提醒：语音播放失败（{e}），文本已输出。")
 
 
 def persist_io_modes(state: dict) -> None:

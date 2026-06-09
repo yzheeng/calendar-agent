@@ -241,6 +241,7 @@ async def _receive_audio(websocket: Any, on_audio: Any) -> None:
 
 
 async def _close_connection(websocket: Any) -> None:
+    closed_exc = _load_websockets().exceptions.ConnectionClosed
     try:
         await finish_connection(websocket)
         await wait_for_event(
@@ -248,8 +249,13 @@ async def _close_connection(websocket: Any) -> None:
             MsgType.FullServerResponse,
             EventType.ConnectionFinished,
         )
+    except closed_exc:
+        pass
     finally:
-        await websocket.close()
+        try:
+            await websocket.close()
+        except closed_exc:
+            pass
 
 
 async def _connect(websockets: Any, endpoint: str, headers: dict) -> Any:
