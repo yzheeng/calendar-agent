@@ -9,19 +9,18 @@
     "base_url": ""
   },
   "io": {
-    "input_mode": "voice",
-    "output_mode": "voice"
+    "input_mode": "text",
+    "output_mode": "text"
   },
   "agent": {
     "context_window": 20
   },
   "mcpServers": {
     "reminders": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "/Users/yzheng/PycharmProjects/apple-reminders-mcp-server",
-        "run",
+        "--from",
+        "git+https://github.com/yzheeng/apple-reminders-mcp-server",
         "apple-reminders-mcp-server"
       ]
     }

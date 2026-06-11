@@ -58,26 +58,41 @@ cd calendar-agent
 # 2. 安装依赖
 uv sync
 
-# 3. 安装 reminders MCP server（提醒功能依赖它）
-git clone https://github.com/yzheeng/apple-reminders-mcp-server
-# 然后在 settings.json 的 mcpServers 中，把 --directory 后的路径改为你的实际路径
-
-# 4. 配置环境变量，在 .env 中填入对应 api key
+# 3. 配置环境变量，在 .env 中填入对应 api key
 cp .env.example .env
 
-# 5. 启动
+# 4. 启动
 uv run main.py
 ```
 
-> 首次运行时，macOS 会弹窗请求「自动化」（控制提醒事项）与「麦克风」权限，允许即可。
+> 首次启动会通过 `uvx` 自动拉取并构建 reminders MCP server（需联网），之后走本地缓存，秒级启动；macOS 会弹窗请求「自动化」（控制提醒事项）与「麦克风」权限，允许即可。
 
 启动后直接打字对话，输入 `/help` 查看命令，`/voice` 切到全语音模式，`/exit` 退出。
 
 ## 配置
 
-模型来源、输入输出模式、上下文窗口在 `settings.json` 中配置；各服务密钥（阿里云百炼、火山引擎豆包语音、Tavily 搜索）填在 `.env` 中，模板见 `.env.example`。
+所有配置集中在两处：`settings.json`（运行配置）与 `.env`（各服务密钥：阿里云百炼、火山引擎豆包语音、Tavily 搜索，模板见 `.env.example`）。
 
-MCP server 在 `settings.json` 的 `mcpServers` 键中声明，采用通用的 `command` + `args` 格式：
+**日常配置不需要手动编辑文件**——模型来源、输入输出模式、上下文窗口都可以在运行中通过斜杠命令调整（`/model_setting`、`/input`、`/output`、`/set_context` 等，见下方命令表），改动会自动写回 `settings.json` 持久化，下次启动直接生效。
+
+需要手动编辑 `settings.json` 的主要是 MCP server 声明：在 `mcpServers` 键中配置，采用通用的 `command` + `args` 格式。默认配置通过 `uvx` 直接从 GitHub 拉取运行 [apple-reminders-mcp-server](https://github.com/yzheeng/apple-reminders-mcp-server)，无需手动克隆或修改路径：
+
+```json
+{
+  "mcpServers": {
+    "reminders": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/yzheeng/apple-reminders-mcp-server",
+        "apple-reminders-mcp-server"
+      ]
+    }
+  }
+}
+```
+
+如需本地开发调试 MCP server，也可以克隆仓库后改用本地路径方式启动：
 
 ```json
 {
