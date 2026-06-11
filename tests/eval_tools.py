@@ -7,11 +7,19 @@ from pathlib import Path
 
 from src.agent.llm import build_client
 from src.config.settings import load_settings
-from src.agent.run_agent import tools
 from src.agent.prompt import _system_message
+from src.mcp.manager import MCPManager
+from src.tools.local_tools import LOCAL_TOOL_DEFS
 
 # 评测专用 client, 从setting配置中构造
-client, MODEL = build_client(load_settings())
+_settings = load_settings()
+client, MODEL = build_client(_settings)
+
+# 评测只看模型选工具、不真执行；拿到工具定义后立即关掉 server，避免子进程空挂
+_manager = MCPManager(_settings["mcpServers"])
+_manager.start_all()
+tools = _manager.openai_tools + LOCAL_TOOL_DEFS
+_manager.close_all()
 
 DATASET_PATH = Path(__file__).resolve().parent / "datasets" / "tool_selection.json"
 

@@ -4,7 +4,6 @@ import os
 
 from src.agent.context import trim_messages
 from src.tools.web_search import web_search
-from pathlib import Path
 
 max_steps = int(os.getenv("MAX_STEPS", default="5"))
 
