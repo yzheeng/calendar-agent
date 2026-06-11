@@ -13,20 +13,26 @@ from src.memory.profile import update_profile
 from src.memory.session import save_session
 from src.cli.commands import is_command, handle_command
 from src.cli.io_modes import get_input, deliver_output
+from src.mcp.manager import MCPManager
+from src.tools.local_tools import LOCAL_TOOL_DEFS
 
 EXIT_WORDS = ("退出", "再见", "结束", "拜拜")
 
 
 def main():
     messages = assemble_context()
-    # 排除头部 system 后, 一有对话的长度
     baseline_len = sum(1 for m in messages if m.get("role") != "system")
-    # 加载默认llm设定
     settings = load_settings()
     client, model = build_client(settings)
+
+    # 拉起 MCP server 并组装完整工具列表（MCP 动态发现 + 本地工具）
+    mcp_manager = MCPManager(settings["mcpServers"])
+    mcp_manager.start_all()
+    tools = mcp_manager.openai_tools + LOCAL_TOOL_DEFS
+    print(f"已加载 {len(mcp_manager.openai_tools)} 个 MCP 工具，{len(LOCAL_TOOL_DEFS)} 个本地工具。")
+
     print(f"助手已启动（模型：{model}），输入 /help 看命令，/exit 退出。")
 
-    # 全局状态
     state = {
         "client": client,
         "model": model,
@@ -38,39 +44,40 @@ def main():
         "baseline_len": baseline_len,
     }
 
-    while True:
-        try:
-            text = get_input(state)
-        except (EOFError, KeyboardInterrupt):
-            print()
-            break
-        except Exception as e:
-            print(f"获取输入出错，跳过这轮：{e}")
-            continue
-        # 清洗字符串
-        text = text.encode("utf-8", "ignore").decode("utf-8")
-        # 空输入
-        if not text:
-            continue
-        # 处理命令
-        if is_command(text):
-            if handle_command(text, state) == "exit":
+    # 主循环包进 try/finally，保证 MCP 子进程一定被回收
+    try:
+        while True:
+            try:
+                text = get_input(state)
+            except (EOFError, KeyboardInterrupt):
+                print()
                 break
-            continue
-        # 退出判断
-        if any(w in text for w in EXIT_WORDS):
-            print("助手已退出。")
-            break
-        # 调用模型
-        reply, state["messages"] = run_agent(
-            text, state["messages"], state["client"], state["model"], state["context_window"]
-        )
-        deliver_output(reply, state)
+            except Exception as e:
+                print(f"获取输入出错，跳过这轮：{e}")
+                continue
 
-    history = strip_system(state["messages"])
-    save_session(history)
-    new_messages = history[state["baseline_len"]:]
-    update_profile(new_messages, state["client"], state["model"])
+            text = text.encode("utf-8", "ignore").decode("utf-8")
+            if not text:
+                continue
+            if is_command(text):
+                if handle_command(text, state) == "exit":
+                    break
+                continue
+            if any(w in text for w in EXIT_WORDS):
+                print("助手已退出。")
+                break
+            reply, state["messages"] = run_agent(
+                text, state["messages"], state["client"], state["model"],
+                state["context_window"], tools, mcp_manager,
+            )
+            deliver_output(reply, state)
+
+        history = strip_system(state["messages"])
+        save_session(history)
+        new_messages = history[state["baseline_len"]:]
+        update_profile(new_messages, state["client"], state["model"])
+    finally:
+        mcp_manager.close_all()
 
 
 if __name__ == "__main__":

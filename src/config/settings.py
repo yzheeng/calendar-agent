@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 SETTINGS_PATH = Path(__file__).resolve().parents[2] / "settings.json"
 
 # 一份完整的默认配置
@@ -22,6 +21,7 @@ DEFAULTS = {
     "agent": {
         "context_window": 20,
     },
+    "mcpServers": {},
 }
 
 
@@ -42,7 +42,7 @@ def _merge(defaults: dict, override: dict) -> dict:
 def load_settings() -> dict:
     """读 settings.json，返回完整配置。文件不存在或坏了，都回退到默认值。"""
     if not SETTINGS_PATH.exists():
-        return _merge(DEFAULTS, {})          # 等于返回 DEFAULTS 的副本
+        return _merge(DEFAULTS, {})  # 等于返回 DEFAULTS 的副本
 
     try:
         with open(SETTINGS_PATH, encoding="utf-8") as f:
@@ -55,7 +55,7 @@ def load_settings() -> dict:
         print("settings.json 格式不对（不是对象），改用默认配置。")
         return _merge(DEFAULTS, {})
 
-    return _merge(DEFAULTS, data)            
+    return _merge(DEFAULTS, data)
 
 
 def save_settings(settings: dict) -> None:

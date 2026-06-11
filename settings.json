@@ -14,5 +14,16 @@
   },
   "agent": {
     "context_window": 20
+  },
+  "mcpServers": {
+    "reminders": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/yzheng/PycharmProjects/apple-reminders-mcp-server",
+        "run",
+        "apple-reminders-mcp-server"
+      ]
+    }
   }
 }

@@ -1,6 +1,8 @@
 import json
 import subprocess
-
+"""
+mcp_client.py（协议层）：负责MCP 协议——子进程、握手、JSON-RPC 收发。
+"""
 
 class MCPClient:
 
@@ -98,7 +100,7 @@ class MCPClient:
 if __name__ == "__main__":
     client = MCPClient(
         name="reminders",
-        command=["uv", "--directory", "/Users/yzheng/PycharmProjects/reminder-mcp-server",
+        command=["uv", "--directory", "/Users/yzheng/PycharmProjects/apple-reminders-mcp-server",
                  "run", "apple-reminders-mcp-server"],
     )
     client.start()
