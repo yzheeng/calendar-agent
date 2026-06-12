@@ -23,6 +23,13 @@
         "git+https://github.com/yzheeng/apple-reminders-mcp-server",
         "apple-reminders-mcp-server"
       ]
+    },
+    "time": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time",
+        "--local-timezone=Asia/Shanghai"
+      ]
     }
   }
 }

@@ -17,6 +17,7 @@ def _cmd_help(args, state):
     print("  /voice           一键全语音")
     print("  /text            一键全文本")
     print("  /profile         查看当前用户长期偏好")
+    print("  /tool            显示当前已加载的本地工具和 MCP 工具")
     print("  /set_context <n> 设置上下文滑动窗口大小")
     print("  /clear_context   清空当前会话上下文")
     print("  /exit            退出助手")
@@ -91,6 +92,20 @@ def _cmd_profile(args, state):
     return "continue"
 
 
+def _cmd_tool(args, state):
+    summary = state.get("tool_summary", {})
+    local = summary.get("local", [])
+    mcp = summary.get("mcp", {})
+
+    print(f"[本地] {', '.join(local) if local else '(无)'}")
+    if not mcp:
+        print("[MCP] (无)")
+    else:
+        for server, names in mcp.items():
+            print(f"[{server}] {', '.join(names)}")
+    return "continue"
+
+
 def _cmd_set_context(args, state):
     if not args or not args[0].isdigit():
         print(f"用法：/set_context <正整数>（当前：{state['context_window']}）")
@@ -120,6 +135,7 @@ _REGISTRY = {
     "voice": _cmd_voice,
     "text": _cmd_text,
     "profile": _cmd_profile,
+    "tool": _cmd_tool,
     "set_context": _cmd_set_context,
     "clear_context": _cmd_clear_context,
 }

@@ -31,6 +31,14 @@ def main():
     tools = mcp_manager.openai_tools + LOCAL_TOOL_DEFS
     print(f"已加载 {len(mcp_manager.openai_tools)} 个 MCP 工具，{len(LOCAL_TOOL_DEFS)} 个本地工具。")
 
+    # /tool 命令的展示快照：只投影名字，不让命令层接触 MCPManager 内部
+    tool_summary = {
+        "local": [t["function"]["name"] for t in LOCAL_TOOL_DEFS],
+        "mcp": {},
+    }
+    for tool_name, client_obj in mcp_manager.tool_router.items():
+        tool_summary["mcp"].setdefault(client_obj.name, []).append(tool_name)
+
     print(f"助手已启动（模型：{model}），输入 /help 看命令，/exit 退出。")
 
     state = {
@@ -42,6 +50,7 @@ def main():
         "context_window": settings["agent"]["context_window"],
         "messages": messages,
         "baseline_len": baseline_len,
+        "tool_summary": tool_summary,
     }
 
     # 主循环包进 try/finally，保证 MCP 子进程一定被回收
