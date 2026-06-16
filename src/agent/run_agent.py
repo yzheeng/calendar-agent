@@ -2,6 +2,7 @@ import json
 import os
 
 
+from src.agent.approval import ask_tool_approval
 from src.agent.context import trim_messages
 from src.tools.web_search import web_search
 
@@ -24,7 +25,8 @@ def execute_tool(name: str, args: dict, mcp_manager) -> dict:
 
 
 def run_agent(user_text: str, messages: list, client, model: str,
-              context_window: int, tools: list, mcp_manager) -> tuple[str, list]:
+              context_window: int, tools: list, mcp_manager,
+              require_tool_approval: bool = False) -> tuple[str, list]:
     user_index = len(messages)
     messages.append({"role": "user", "content": user_text})
 
@@ -48,7 +50,13 @@ def run_agent(user_text: str, messages: list, client, model: str,
             except json.JSONDecodeError as e:
                 result = {"status": "fail", "message": f"参数解析失败：{e}"}
             else:
-                result = execute_tool(name, args, mcp_manager)
+                if require_tool_approval and not ask_tool_approval(name, args):
+                    result = {
+                        "status": "fail",
+                        "message": "用户拒绝了本次工具调用，工具没有执行。",
+                    }
+                else:
+                    result = execute_tool(name, args, mcp_manager)
 
             messages.append({
                 "role": "tool",

@@ -13,7 +13,8 @@
     "output_mode": "text"
   },
   "agent": {
-    "context_window": 20
+    "context_window": 20,
+    "require_tool_approval": false
   },
   "mcpServers": {
     "reminders": {

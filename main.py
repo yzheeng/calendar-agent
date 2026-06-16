@@ -48,6 +48,7 @@ def main():
         "input_mode": settings["io"]["input_mode"],
         "output_mode": settings["io"]["output_mode"],
         "context_window": settings["agent"]["context_window"],
+        "require_tool_approval": settings["agent"]["require_tool_approval"],
         "messages": messages,
         "baseline_len": baseline_len,
         "tool_summary": tool_summary,
@@ -78,6 +79,7 @@ def main():
             reply, state["messages"] = run_agent(
                 text, state["messages"], state["client"], state["model"],
                 state["context_window"], tools, mcp_manager,
+                state["require_tool_approval"],
             )
             deliver_output(reply, state)
 

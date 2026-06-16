@@ -118,6 +118,7 @@ uv run main.py
 | `/output <text\|voice>` | 切换输出模式 |
 | `/voice` / `/text` | 一键全语音 / 全文本 |
 | `/profile` | 查看当前长期偏好 |
+| `/human_in_the_loop <on\|off\|status>` | 开关工具调用前的人工确认 |
 | `/set_context <n>` | 设置上下文滑动窗口大小 |
 | `/clear_context` | 清空当前会话上下文 |
 | `/exit` | 退出 |

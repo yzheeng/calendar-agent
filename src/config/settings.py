@@ -20,6 +20,7 @@ DEFAULTS = {
     },
     "agent": {
         "context_window": 20,
+        "require_tool_approval": True,
     },
     "mcpServers": {},
 }

@@ -18,6 +18,7 @@ def _cmd_help(args, state):
     print("  /text            一键全文本")
     print("  /profile         查看当前用户长期偏好")
     print("  /tool            显示当前已加载的本地工具和 MCP 工具")
+    print("  /human_in_the_loop <on|off|status>  工具调用前是否需要人工确认")
     print("  /set_context <n> 设置上下文滑动窗口大小")
     print("  /clear_context   清空当前会话上下文")
     print("  /exit            退出助手")
@@ -26,9 +27,11 @@ def _cmd_help(args, state):
 
 def _cmd_status(args, state):
     settings = state["settings"]
+    tool_mode = "人工确认" if state.get("require_tool_approval") else "自动"
     print(f"当前模式：{settings['mode']}")
     print(f"当前模型：{state['model']}")
     print(f"输入：{state['input_mode']}   输出：{state['output_mode']}")
+    print(f"工具执行：{tool_mode}")
     return "continue"
 
 
@@ -125,6 +128,35 @@ def _cmd_set_context(args, state):
     return "continue"
 
 
+def _cmd_human_in_the_loop(args, state):
+    action = args[0].lower() if args else "status"
+
+    if action == "status":
+        status = "开启" if state.get("require_tool_approval") else "关闭"
+        mode = "工具调用前需要人工确认" if state.get("require_tool_approval") else "工具会自动执行"
+        print(f"human-in-the-loop：{status}（{mode}）")
+        return "continue"
+
+    if action not in ("on", "off"):
+        print("用法：/human_in_the_loop on、/human_in_the_loop off 或 /human_in_the_loop status")
+        return "continue"
+
+    enabled = action == "on"
+    state["require_tool_approval"] = enabled
+    state["settings"]["agent"]["require_tool_approval"] = enabled
+    try:
+        save_settings(state["settings"])
+    except OSError as e:
+        print(f"提醒：保存 human-in-the-loop 设置失败（{e}），仅本次会话生效。")
+        return "continue"
+
+    if enabled:
+        print("human-in-the-loop 已开启：工具调用前会请求人工确认。")
+    else:
+        print("human-in-the-loop 已关闭：工具会自动执行。")
+    return "continue"
+
+
 _REGISTRY = {
     "help": _cmd_help,
     "status": _cmd_status,
@@ -136,6 +168,7 @@ _REGISTRY = {
     "text": _cmd_text,
     "profile": _cmd_profile,
     "tool": _cmd_tool,
+    "human_in_the_loop": _cmd_human_in_the_loop,
     "set_context": _cmd_set_context,
     "clear_context": _cmd_clear_context,
 }
