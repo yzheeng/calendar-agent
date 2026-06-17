@@ -6,11 +6,16 @@ from src.agent.approval import ask_tool_approval
 from src.agent.context import trim_messages
 from src.tools.web_search import web_search
 
-max_steps = int(os.getenv("MAX_STEPS", default="5"))
-
 LOCAL_TOOLS = {
     "web_search": web_search,
 }
+
+
+def _max_steps() -> int:
+    try:
+        return int(os.getenv("MAX_STEPS", default="5"))
+    except ValueError:
+        return 5
 
 def execute_tool(name: str, args: dict, mcp_manager) -> dict:
     """工具派发：本地工具直接调，其余交给 MCP manager 路由。"""
@@ -26,11 +31,12 @@ def execute_tool(name: str, args: dict, mcp_manager) -> dict:
 
 def run_agent(user_text: str, messages: list, client, model: str,
               context_window: int, tools: list, mcp_manager,
-              require_tool_approval: bool = False) -> tuple[str, list]:
+              require_tool_approval: bool = False,
+              approval_callback=ask_tool_approval) -> tuple[str, list]:
     user_index = len(messages)
     messages.append({"role": "user", "content": user_text})
 
-    for _ in range(max_steps):
+    for _ in range(_max_steps()):
         response = client.chat.completions.create(
             model=model,
             messages=trim_messages(messages, context_window),
@@ -50,7 +56,7 @@ def run_agent(user_text: str, messages: list, client, model: str,
             except json.JSONDecodeError as e:
                 result = {"status": "fail", "message": f"参数解析失败：{e}"}
             else:
-                if require_tool_approval and not ask_tool_approval(name, args):
+                if require_tool_approval and not approval_callback(name, args):
                     result = {
                         "status": "fail",
                         "message": "用户拒绝了本次工具调用，工具没有执行。",

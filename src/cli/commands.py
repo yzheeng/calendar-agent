@@ -39,6 +39,9 @@ def _cmd_exit(args, state):
     return "exit"
 
 def _cmd_model_setting(args, state):
+    if not state.get("allow_interactive_commands", True):
+        print("/model_setting 需要交互式终端；非交互入口请直接编辑 settings.json 后重启。")
+        return "continue"
     run_model_config(state)
     return "continue"
 

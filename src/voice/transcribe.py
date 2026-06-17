@@ -5,10 +5,22 @@ import requests
 from dotenv import load_dotenv
 
 
-app_id=os.getenv("APP_ID")
-access_token=os.getenv("ACCESS_TOKEN")
-
 RECOGNIZE_URL = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash"
+
+
+def _speech_config() -> tuple[str, str]:
+    load_dotenv()
+    app_id = os.getenv("APP_ID", "").strip()
+    access_token = os.getenv("ACCESS_TOKEN", "").strip()
+    missing = []
+    if not app_id:
+        missing.append("APP_ID")
+    if not access_token:
+        missing.append("ACCESS_TOKEN")
+    if missing:
+        joined = ", ".join(missing)
+        raise RuntimeError(f"缺少语音识别配置：{joined}。请在 .env 中配置后重试。")
+    return app_id, access_token
 
 
 def transcribe(file_path: str) -> str:
@@ -17,6 +29,8 @@ def transcribe(file_path: str) -> str:
     把本地音频文件转成文字。
     成功返回识别出的文字；失败抛出异常，让调用方知道转写没成。
     """
+    app_id, access_token = _speech_config()
+
     # 1. 读音频文件，转成 base64（火山要求音频以 base64 塞进请求体）
     with open(file_path, "rb") as f:
         audio_base64 = base64.b64encode(f.read()).decode("utf-8")
