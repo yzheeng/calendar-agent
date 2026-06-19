@@ -35,15 +35,21 @@ class CalendarAgentRuntime:
         self,
         approval_callback: Callable[[str, dict], bool] = ask_tool_approval,
         allow_interactive_commands: bool = True,
+        event_callback: Callable[[dict], None] | None = None,
     ):
         self.approval_callback = approval_callback
         self.allow_interactive_commands = allow_interactive_commands
+        self.event_callback = event_callback
         self.state: dict | None = None
         self.mcp_manager: MCPManager | None = None
         self.tools: list[dict] = []
         self.started = False
         self.closed = False
         self._lock = threading.RLock()
+
+    def _emit(self, event: dict) -> None:
+        if self.event_callback is not None:
+            self.event_callback(event)
 
     def start(self) -> str:
         with self._lock:
@@ -122,12 +128,15 @@ class CalendarAgentRuntime:
                     if not output:
                         output = "助手已退出。"
                     self.close()
+                self._emit({"type": "reply", "content": output, "is_command": True})
                 return AgentResult(output, should_exit=should_exit, is_command=True)
 
             if any(word in text for word in EXIT_WORDS):
                 self.close()
+                self._emit({"type": "reply", "content": "助手已退出。", "is_command": False})
                 return AgentResult("助手已退出。", should_exit=True)
 
+            self._emit({"type": "state", "value": "thinking"})
             reply, self.state["messages"] = run_agent(
                 text,
                 self.state["messages"],
@@ -138,7 +147,10 @@ class CalendarAgentRuntime:
                 self.mcp_manager,
                 self.state["require_tool_approval"],
                 self.approval_callback,
+                on_event=self.event_callback,
             )
+            self._emit({"type": "reply", "content": reply or "", "is_command": False})
+            self._emit({"type": "state", "value": "idle"})
             return AgentResult(reply or "")
 
     def close(self) -> None:

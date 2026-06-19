@@ -2,8 +2,13 @@ from src.agent.runtime import CalendarAgentRuntime
 from src.cli.io_modes import get_input, deliver_output
 
 
+def _cli_event_sink(event: dict) -> None:
+    if event.get("type") == "tool" and event.get("phase") == "start":
+        print(f"正在调用工具{event['name']}")
+
+
 def main():
-    runtime = CalendarAgentRuntime()
+    runtime = CalendarAgentRuntime(event_callback=_cli_event_sink)
     runtime.start()
 
     try:

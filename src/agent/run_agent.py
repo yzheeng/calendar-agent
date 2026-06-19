@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Callable
 
 
 from src.agent.approval import ask_tool_approval
@@ -32,7 +33,8 @@ def execute_tool(name: str, args: dict, mcp_manager) -> dict:
 def run_agent(user_text: str, messages: list, client, model: str,
               context_window: int, tools: list, mcp_manager,
               require_tool_approval: bool = False,
-              approval_callback=ask_tool_approval) -> tuple[str, list]:
+              approval_callback=ask_tool_approval,
+              on_event: Callable[[dict], None] | None = None) -> tuple[str, list]:
     user_index = len(messages)
     messages.append({"role": "user", "content": user_text})
 
@@ -49,7 +51,8 @@ def run_agent(user_text: str, messages: list, client, model: str,
 
         for tool_call in message.tool_calls:
             name = tool_call.function.name
-            print(f"正在调用工具{name}")
+            if on_event is not None:
+                on_event({"type": "tool", "name": name, "phase": "start"})
 
             try:
                 args = json.loads(tool_call.function.arguments)
