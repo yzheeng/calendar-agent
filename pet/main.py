@@ -1,10 +1,12 @@
 import asyncio
 import json
+import math
 import sys
 import threading
 
 import websockets
-from PySide6.QtCore import Qt, QObject, Signal
+from PySide6.QtCore import Qt, QObject, QPointF, QRectF, QTimer, Signal
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -18,26 +20,103 @@ from PySide6.QtWidgets import (
 
 
 WS_URL = "ws://127.0.0.1:8765/ws"
-ORB_SIZE = 56
+ORB_SIZE = 56          # 圆球本体直径
+ORB_PADDING = 18       # 外圈给波纹 / 转圈留的余量
 DRAG_THRESHOLD = 5
+ANIM_INTERVAL_MS = 33  # ~30fps
 
-ORB_BASE = (
-    "border-radius: {r}px;"
-    "border: 1px solid rgba(255, 255, 255, 90);"
-).format(r=ORB_SIZE // 2)
+ORB_BLUE = QColor("#4a90e2")
+ORB_RED = QColor("#e74c3c")
 
-ORB_IDLE = ORB_BASE + (
-    "background: qradialgradient(cx:0.3, cy:0.3, radius:0.95, fx:0.3, fy:0.3,"
-    " stop:0 #a8d0ff, stop:0.55 #4a90e2, stop:1 #1f5eb8);"
-)
-ORB_THINKING = ORB_BASE + (
-    "background: qradialgradient(cx:0.3, cy:0.3, radius:0.95, fx:0.3, fy:0.3,"
-    " stop:0 #e2c7ff, stop:0.55 #9b59b6, stop:1 #5e2a82);"
-)
-ORB_ERROR = ORB_BASE + (
-    "background: qradialgradient(cx:0.3, cy:0.3, radius:0.95, fx:0.3, fy:0.3,"
-    " stop:0 #ffb3b3, stop:0.55 #e74c3c, stop:1 #8b1a0e);"
-)
+
+class OrbWidget(QWidget):
+    """单色 orb + 用动作（波纹 / 转圈 / 脉动）区分状态。"""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        side = ORB_SIZE + 2 * ORB_PADDING
+        self.setFixedSize(side, side)
+        # 让点击穿透到 PetWindow 统一处理
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        self._state = "idle"
+        self._phase = 0.0
+        self._timer = QTimer(self)
+        self._timer.setInterval(ANIM_INTERVAL_MS)
+        self._timer.timeout.connect(self._tick)
+
+    def set_state(self, state: str) -> None:
+        if state == self._state:
+            return
+        self._state = state
+        self._phase = 0.0
+        if state in {"listening", "thinking", "speaking"}:
+            if not self._timer.isActive():
+                self._timer.start()
+        else:
+            self._timer.stop()
+        self.update()
+
+    def _tick(self) -> None:
+        self._phase += ANIM_INTERVAL_MS / 1000.0
+        self.update()
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        cx = self.width() / 2
+        cy = self.height() / 2
+        r = ORB_SIZE / 2
+
+        if self._state == "listening":
+            self._paint_ripples(p, cx, cy, r)
+        elif self._state == "thinking":
+            self._paint_spinner(p, cx, cy, r)
+
+        self._paint_orb(p, cx, cy, r)
+
+    def _paint_orb(self, p: QPainter, cx: float, cy: float, r: float) -> None:
+        color = ORB_RED if self._state == "error" else ORB_BLUE
+        # 说话时温和脉动
+        scale = 1.0
+        if self._state == "speaking":
+            scale = 1.0 + 0.06 * math.sin(self._phase * 2 * math.pi * 1.2)
+        rr = r * scale
+
+        grad = QRadialGradient(cx - rr * 0.3, cy - rr * 0.3, rr * 1.5)
+        grad.setColorAt(0.0, color.lighter(160))
+        grad.setColorAt(0.55, color)
+        grad.setColorAt(1.0, color.darker(150))
+        p.setBrush(QBrush(grad))
+        p.setPen(QPen(QColor(255, 255, 255, 90), 1))
+        p.drawEllipse(QPointF(cx, cy), rr, rr)
+
+    def _paint_ripples(self, p: QPainter, cx: float, cy: float, r: float) -> None:
+        # 两道交错的波纹，从 orb 边缘向外扩张并淡出
+        period = 1.4  # 秒
+        for i in range(2):
+            t = ((self._phase / period) + i * 0.5) % 1.0
+            radius = r * (1.0 + t * 1.2)
+            alpha = int(140 * (1.0 - t))
+            if alpha <= 0:
+                continue
+            pen = QPen(QColor(ORB_BLUE.red(), ORB_BLUE.green(), ORB_BLUE.blue(), alpha), 2)
+            p.setBrush(Qt.NoBrush)
+            p.setPen(pen)
+            p.drawEllipse(QPointF(cx, cy), radius, radius)
+
+    def _paint_spinner(self, p: QPainter, cx: float, cy: float, r: float) -> None:
+        outer_r = r + 8
+        arc_span = 110  # 弧度跨度，度
+        start_deg = (self._phase * 240) % 360  # 每秒 240°
+        pen = QPen(QColor(ORB_BLUE.red(), ORB_BLUE.green(), ORB_BLUE.blue(), 220), 3)
+        pen.setCapStyle(Qt.RoundCap)
+        p.setBrush(Qt.NoBrush)
+        p.setPen(pen)
+        rect = QRectF(cx - outer_r, cy - outer_r, outer_r * 2, outer_r * 2)
+        # QPainter angles: 16 = 1°, 0 = 3 点钟方向，逆时针为正
+        p.drawArc(rect, int(-start_deg * 16), int(-arc_span * 16))
 
 
 class WsClient(QObject):
@@ -71,13 +150,16 @@ class WsClient(QObject):
         finally:
             self._ws = None
 
-    def send_text(self, content: str):
+    def send_json(self, obj: dict):
         if self._loop is None or self._ws is None:
             return
         asyncio.run_coroutine_threadsafe(
-            self._ws.send(json.dumps({"type": "text", "content": content})),
+            self._ws.send(json.dumps(obj)),
             self._loop,
         )
+
+    def send_text(self, content: str):
+        self.send_json({"type": "text", "content": content})
 
     def stop(self):
         if self._loop and self._loop.is_running():
@@ -97,11 +179,7 @@ class PetWindow(QWidget):
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        self.orb = QLabel()
-        self.orb.setFixedSize(ORB_SIZE, ORB_SIZE)
-        self.orb.setStyleSheet(ORB_IDLE)
-        # 让鼠标事件穿到 PetWindow，由它统一处理点击/拖动
-        self.orb.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.orb = OrbWidget(self)
 
         self.panel = QFrame()
         self.panel.setStyleSheet(
@@ -151,6 +229,7 @@ class PetWindow(QWidget):
         self._press_pos = None
         self._drag_offset = None
         self._dragging = False
+        self._recording = False
 
     def on_event(self, ev: dict):
         t = ev.get("type")
@@ -159,28 +238,40 @@ class PetWindow(QWidget):
             self.bubble.setText(self._latest_status)
         elif t == "state":
             v = ev.get("value")
-            if v == "thinking":
-                self.orb.setStyleSheet(ORB_THINKING)
+            self.orb.set_state(v)
+            if v == "listening":
+                self._latest_status = "聆听中…"
+                self.bubble.setText(self._latest_status)
+                self.input.setDisabled(True)
+                self._recording = True
+            elif v == "thinking":
                 self._latest_status = "思考中…"
                 self.bubble.setText(self._latest_status)
                 self.input.setDisabled(True)
+            elif v == "speaking":
+                self._latest_status = "说话中…"
+                self.bubble.setText(self._latest_status)
+                self.input.setDisabled(True)
             elif v == "idle":
-                self.orb.setStyleSheet(ORB_IDLE)
                 self.input.setDisabled(False)
+                self._recording = False
                 if self.panel.isVisible():
                     self.input.setFocus()
+        elif t == "transcript":
+            self._latest_status = f"你说：{ev.get('content', '')}"
+            self.bubble.setText(self._latest_status)
         elif t == "tool":
             self._latest_status = f"正在调用 {ev.get('name')}…"
             self.bubble.setText(self._latest_status)
         elif t == "reply":
             self._latest_status = ev.get("content", "")
             self.bubble.setText(self._latest_status)
-            self.input.setDisabled(False)
         elif t == "error":
-            self.orb.setStyleSheet(ORB_ERROR)
+            self.orb.set_state("error")
             self._latest_status = f"⚠ {ev.get('message')}"
             self.bubble.setText(self._latest_status)
             self.input.setDisabled(False)
+            self._recording = False
 
     def _toggle_panel(self):
         if self.panel.isVisible():
@@ -189,6 +280,12 @@ class PetWindow(QWidget):
             self.bubble.setText(self._latest_status)
             self.panel.show()
             self.input.setFocus()
+
+    def _toggle_voice(self):
+        if self._recording:
+            self.client.send_json({"type": "voice_stop"})
+        else:
+            self.client.send_json({"type": "voice_start"})
 
     def _on_send(self):
         text = self.input.text().strip()
@@ -216,7 +313,7 @@ class PetWindow(QWidget):
 
     def mouseReleaseEvent(self, e):
         if self._press_pos is not None and not self._dragging:
-            self._toggle_panel()
+            self._toggle_voice()
         self._press_pos = None
         self._drag_offset = None
         self._dragging = False
@@ -224,9 +321,13 @@ class PetWindow(QWidget):
 
     def contextMenuEvent(self, e):
         menu = QMenu(self)
+        cli_action = menu.addAction("cli")
         quit_action = menu.addAction("退出")
-        quit_action.triggered.connect(QApplication.quit)
-        menu.exec(e.globalPos())
+        chosen = menu.exec(e.globalPos())
+        if chosen is cli_action:
+            self._toggle_panel()
+        elif chosen is quit_action:
+            QApplication.quit()
 
 
 def main():

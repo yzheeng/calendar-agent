@@ -112,7 +112,8 @@ class CalendarAgentRuntime:
                 f"工具执行：{tool_mode}"
             )
 
-    def ask(self, text: str, capture_command_output: bool = True) -> AgentResult:
+    def ask(self, text: str, capture_command_output: bool = True,
+            emit_idle_state: bool = True) -> AgentResult:
         with self._lock:
             self._ensure_started()
             assert self.state is not None
@@ -150,7 +151,8 @@ class CalendarAgentRuntime:
                 on_event=self.event_callback,
             )
             self._emit({"type": "reply", "content": reply or "", "is_command": False})
-            self._emit({"type": "state", "value": "idle"})
+            if emit_idle_state:
+                self._emit({"type": "state", "value": "idle"})
             return AgentResult(reply or "")
 
     def close(self) -> None:

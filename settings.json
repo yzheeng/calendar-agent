@@ -1,7 +1,7 @@
 {
   "mode": "remote",
   "remote": {
-    "model": "deepseek-v4-pro",
+    "model": "qwen3.7-plus",
     "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
   },
   "local": {
@@ -9,8 +9,8 @@
     "base_url": ""
   },
   "io": {
-    "input_mode": "voice",
-    "output_mode": "voice"
+    "input_mode": "text",
+    "output_mode": "text"
   },
   "agent": {
     "context_window": 20,

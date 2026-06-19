@@ -1,3 +1,5 @@
+import threading
+
 import sounddevice as sd
 from scipy.io.wavfile import write
 from pathlib import Path
@@ -49,6 +51,27 @@ def record(output_path: str) -> str:
     write(out, SAMPLE_RATE, recording)
     print(f"录音已保存：{out}")
     return str(out)
+
+def record_until_stopped(output_path: str, stop_event: threading.Event) -> str:
+    """录到 stop_event 被 set 为止；保存 wav 返回路径。供 WS 等无终端场景使用。"""
+    frames = []
+
+    def callback(indata, frame_count, time_info, status):
+        frames.append(indata.copy())
+
+    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, callback=callback):
+        stop_event.wait()
+
+    if not frames:
+        recording = np.zeros((1, 1), dtype="float32")
+    else:
+        recording = np.concatenate(frames, axis=0)
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write(out, SAMPLE_RATE, recording)
+    return str(out)
+
 
 if __name__ == "__main__":
     input("按回车开始录音...")
