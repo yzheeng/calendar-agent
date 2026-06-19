@@ -5,15 +5,17 @@ import sys
 import threading
 
 import websockets
-from PySide6.QtCore import Qt, QObject, QPointF, QRectF, QTimer, Signal
+from PySide6.QtCore import Qt, QObject, QPointF, QRectF, QEvent, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
     QLabel,
     QLayout,
-    QLineEdit,
     QMenu,
+    QPlainTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -24,6 +26,8 @@ ORB_SIZE = 56          # 圆球本体直径
 ORB_PADDING = 18       # 外圈给波纹 / 转圈留的余量
 DRAG_THRESHOLD = 5
 ANIM_INTERVAL_MS = 33  # ~30fps
+TEXT_BOX_WIDTH = 430
+TEXT_BOX_HEIGHT = 156
 
 ORB_BLUE = QColor("#4a90e2")
 ORB_RED = QColor("#e74c3c")
@@ -119,6 +123,21 @@ class OrbWidget(QWidget):
         p.drawArc(rect, int(-start_deg * 16), int(-arc_span * 16))
 
 
+class SendTextEdit(QPlainTextEdit):
+    send_requested = Signal(str)
+
+    def keyPressEvent(self, event):
+        is_enter = event.key() in (Qt.Key_Return, Qt.Key_Enter)
+        wants_newline = bool(event.modifiers() & Qt.ShiftModifier)
+        if is_enter and not wants_newline:
+            text = self.toPlainText().strip()
+            if text:
+                self.send_requested.emit(text)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class WsClient(QObject):
     event_received = Signal(dict)
 
@@ -173,6 +192,7 @@ class PetWindow(QWidget):
         super().__init__()
         self.client = client
         self._latest_status = "等待连接…"
+        self._ui_mode = "voice"
 
         self.setWindowFlags(
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
@@ -180,51 +200,126 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.orb = OrbWidget(self)
+        self.voice_status = QLabel("")
+        self.voice_status.setAlignment(Qt.AlignCenter)
+        self.voice_status.setWordWrap(True)
+        self.voice_status.setStyleSheet(
+            "QLabel {"
+            " color: #f7f7f7;"
+            " background-color: rgba(30, 30, 40, 220);"
+            " border-radius: 10px;"
+            " padding: 6px 10px;"
+            " font-size: 13px;"
+            "}"
+        )
+        self.voice_status.setFixedWidth(220)
+        self.voice_status.hide()
 
-        self.panel = QFrame()
-        self.panel.setStyleSheet(
+        self.voice_status_timer = QTimer(self)
+        self.voice_status_timer.setSingleShot(True)
+        self.voice_status_timer.timeout.connect(self.voice_status.hide)
+
+        self.voice_view = QWidget(self)
+        voice_layout = QVBoxLayout(self.voice_view)
+        voice_layout.setContentsMargins(4, 4, 4, 4)
+        voice_layout.setSpacing(4)
+        voice_layout.addWidget(self.orb, alignment=Qt.AlignHCenter)
+        voice_layout.addWidget(self.voice_status, alignment=Qt.AlignHCenter)
+        voice_layout.setSizeConstraint(QLayout.SetFixedSize)
+
+        self.text_box = QFrame(self)
+        self.text_box.setFixedSize(TEXT_BOX_WIDTH, TEXT_BOX_HEIGHT)
+        self.text_box.setStyleSheet(
             "QFrame {"
-            " background-color: rgba(30, 30, 40, 230);"
-            " border-radius: 12px;"
+            " background-color: rgba(255, 255, 255, 248);"
+            " border: 1px solid rgba(0, 0, 0, 45);"
+            " border-radius: 18px;"
+            "}"
+        )
+        shadow = QGraphicsDropShadowEffect(self.text_box)
+        shadow.setBlurRadius(24)
+        shadow.setOffset(0, 6)
+        shadow.setColor(QColor(0, 0, 0, 48))
+        self.text_box.setGraphicsEffect(shadow)
+
+        self.title_label = QLabel("日历助手")
+        self.title_label.setStyleSheet(
+            "QLabel {"
+            " background: transparent;"
+            " border: none;"
+            " color: #242424;"
+            " font-size: 15px;"
+            " font-weight: 600;"
             "}"
         )
 
-        self.bubble = QLabel(self._latest_status)
-        self.bubble.setWordWrap(True)
-        self.bubble.setStyleSheet(
-            "color: #f0f0f0; font-size: 13px; padding: 2px;"
+        self.input = SendTextEdit()
+        self.input.setFixedHeight(82)
+        self.input.setPlaceholderText("问问日历助手")
+        self.input.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.input.customContextMenuRequested.connect(
+            lambda pos: self._show_context_menu(self.input.mapToGlobal(pos))
         )
-        self.bubble.setAttribute(Qt.WA_TransparentForMouseEvents)
-
-        self.input = QLineEdit()
-        self.input.setPlaceholderText("说点什么，回车发送")
         self.input.setStyleSheet(
-            "QLineEdit {"
-            " background-color: rgba(255, 255, 255, 30);"
-            " color: #ffffff;"
-            " border: 1px solid rgba(255, 255, 255, 60);"
-            " border-radius: 8px;"
-            " padding: 6px 10px;"
+            "QPlainTextEdit {"
+            " background-color: rgba(246, 247, 249, 255);"
+            " color: #262626;"
+            " border: 1px solid rgba(0, 0, 0, 28);"
+            " border-radius: 12px;"
+            " font-size: 16px;"
+            " padding: 8px 10px;"
             " selection-background-color: #4a90e2;"
             "}"
+            "QPlainTextEdit:focus {"
+            " border: 1px solid rgba(74, 144, 226, 150);"
+            " background-color: #ffffff;"
+            "}"
+            "QPlainTextEdit:disabled {"
+            " color: #777777;"
+            " background-color: rgba(242, 242, 242, 255);"
+            "}"
         )
-        self.input.returnPressed.connect(self._on_send)
+        self.input.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.input.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.input.send_requested.connect(self._send_text)
 
-        panel_layout = QVBoxLayout(self.panel)
-        panel_layout.setContentsMargins(10, 10, 10, 10)
-        panel_layout.setSpacing(8)
-        panel_layout.addWidget(self.bubble)
-        panel_layout.addWidget(self.input)
-        self.panel.setFixedWidth(260)
+        self.status_label = QLabel("等待连接")
+        self.status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.status_label.setFixedWidth(96)
+        self.status_label.setStyleSheet(
+            "QLabel {"
+            " background: transparent;"
+            " border: none;"
+            " color: #6b7280;"
+            " font-size: 13px;"
+            " font-weight: 500;"
+            "}"
+        )
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.setSpacing(8)
+        title_row.addWidget(self.title_label)
+        title_row.addStretch(1)
+        title_row.addWidget(self.status_label)
+
+        text_layout = QVBoxLayout(self.text_box)
+        text_layout.setContentsMargins(16, 14, 16, 16)
+        text_layout.setSpacing(12)
+        text_layout.addLayout(title_row)
+        text_layout.addWidget(self.input)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(6, 6, 6, 6)
-        root.setSpacing(6)
-        root.addWidget(self.orb, alignment=Qt.AlignHCenter)
-        root.addWidget(self.panel)
+        root.setSpacing(0)
+        root.addWidget(self.voice_view, alignment=Qt.AlignHCenter)
+        root.addWidget(self.text_box, alignment=Qt.AlignHCenter)
         root.setSizeConstraint(QLayout.SetFixedSize)
 
-        self.panel.hide()
+        self.text_box.hide()
+        self.text_box.installEventFilter(self)
+        self.title_label.installEventFilter(self)
+        self.status_label.installEventFilter(self)
 
         self._press_pos = None
         self._drag_offset = None
@@ -235,51 +330,105 @@ class PetWindow(QWidget):
         t = ev.get("type")
         if t == "ready":
             self._latest_status = f"已就绪（{ev.get('model')}）"
-            self.bubble.setText(self._latest_status)
+            self._set_text_status("已就绪")
+            self._show_voice_status(self._latest_status, 2500)
         elif t == "state":
             v = ev.get("value")
             self.orb.set_state(v)
             if v == "listening":
                 self._latest_status = "聆听中…"
-                self.bubble.setText(self._latest_status)
+                self._set_text_status("聆听中")
+                self._show_voice_status(self._latest_status, 0)
                 self.input.setDisabled(True)
                 self._recording = True
             elif v == "thinking":
                 self._latest_status = "思考中…"
-                self.bubble.setText(self._latest_status)
+                self._set_text_status("思考中")
+                self._show_voice_status(self._latest_status, 0)
                 self.input.setDisabled(True)
             elif v == "speaking":
                 self._latest_status = "说话中…"
-                self.bubble.setText(self._latest_status)
+                self._set_text_status("说话中")
+                self._show_voice_status(self._latest_status, 0)
                 self.input.setDisabled(True)
             elif v == "idle":
                 self.input.setDisabled(False)
                 self._recording = False
-                if self.panel.isVisible():
+                self._set_text_status("就绪")
+                self._hide_voice_status_later()
+                if self._ui_mode == "text":
                     self.input.setFocus()
         elif t == "transcript":
             self._latest_status = f"你说：{ev.get('content', '')}"
-            self.bubble.setText(self._latest_status)
+            self._set_text_status("已转写")
+            self._show_voice_status(self._latest_status, 2500)
         elif t == "tool":
             self._latest_status = f"正在调用 {ev.get('name')}…"
-            self.bubble.setText(self._latest_status)
+            self._set_text_status("工具中")
+            self._show_voice_status(self._latest_status, 0)
         elif t == "reply":
             self._latest_status = ev.get("content", "")
-            self.bubble.setText(self._latest_status)
+            self._set_text_status("已回复")
+            self._set_reply_placeholder(self._latest_status)
+            self._show_voice_status(self._latest_status, 4500)
         elif t == "error":
             self.orb.set_state("error")
-            self._latest_status = f"⚠ {ev.get('message')}"
-            self.bubble.setText(self._latest_status)
+            self._latest_status = f"出错：{ev.get('message')}"
+            self._set_text_status("出错")
+            self._set_reply_placeholder(self._latest_status)
+            self._show_voice_status(self._latest_status, 4500)
             self.input.setDisabled(False)
             self._recording = False
 
-    def _toggle_panel(self):
-        if self.panel.isVisible():
-            self.panel.hide()
+    def _switch_to_text_mode(self):
+        if self._recording:
+            self.client.send_json({"type": "voice_stop"})
+            self._recording = False
+        self._ui_mode = "text"
+        self.voice_view.hide()
+        self.text_box.show()
+        self.orb.set_state("idle")
+        self.input.setDisabled(False)
+        self.input.setFocus()
+        self.adjustSize()
+
+    def _switch_to_voice_mode(self):
+        self._ui_mode = "voice"
+        self.text_box.hide()
+        self.voice_view.show()
+        if self._latest_status and self._latest_status != "等待连接…":
+            self._show_voice_status(self._latest_status, 2500)
+        self.adjustSize()
+
+    def _clear_context(self):
+        self.client.send_text("/clear_context")
+        self._latest_status = "正在清除上下文…"
+        self._set_text_status("清除中")
+        self._show_voice_status(self._latest_status, 0)
+
+    def _set_text_status(self, text: str) -> None:
+        self.status_label.setText(text)
+
+    def _set_reply_placeholder(self, text: str) -> None:
+        compact = " ".join(text.split())
+        if len(compact) > 36:
+            compact = f"{compact[:36]}..."
+        self.input.setPlaceholderText(compact or "问问日历助手")
+
+    def _show_voice_status(self, text: str, timeout_ms: int) -> None:
+        compact = " ".join(text.split())
+        if len(compact) > 80:
+            compact = f"{compact[:80]}..."
+        self.voice_status.setText(compact)
+        self.voice_status.show()
+        if timeout_ms > 0:
+            self.voice_status_timer.start(timeout_ms)
         else:
-            self.bubble.setText(self._latest_status)
-            self.panel.show()
-            self.input.setFocus()
+            self.voice_status_timer.stop()
+
+    def _hide_voice_status_later(self) -> None:
+        if self.voice_status.isVisible():
+            self.voice_status_timer.start(1200)
 
     def _toggle_voice(self):
         if self._recording:
@@ -287,45 +436,87 @@ class PetWindow(QWidget):
         else:
             self.client.send_json({"type": "voice_start"})
 
-    def _on_send(self):
-        text = self.input.text().strip()
+    def _send_text(self, text: str):
+        text = text.strip()
         if not text:
             return
         self.client.send_text(text)
+        self._set_text_status("发送中")
         self.input.clear()
+
+    def eventFilter(self, obj, event):
+        if obj in {self.text_box, self.title_label, self.status_label}:
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.RightButton:
+                self._show_context_menu(event.globalPosition().toPoint())
+                event.accept()
+                return True
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.LeftButton:
+                self._begin_drag(event.globalPosition().toPoint())
+                event.accept()
+                return True
+            if event.type() == QEvent.Type.MouseMove and event.buttons() & Qt.LeftButton:
+                self._continue_drag(event.globalPosition().toPoint())
+                event.accept()
+                return True
+            if event.type() == QEvent.Type.MouseButtonRelease and self._press_pos is not None:
+                self._end_drag()
+                event.accept()
+                return True
+        return super().eventFilter(obj, event)
+
+    def _begin_drag(self, global_pos):
+        self._press_pos = global_pos
+        self._drag_offset = self._press_pos - self.frameGeometry().topLeft()
+        self._dragging = False
+
+    def _continue_drag(self, global_pos):
+        if self._press_pos is None:
+            return
+        if not self._dragging and (global_pos - self._press_pos).manhattanLength() > DRAG_THRESHOLD:
+            self._dragging = True
+        if self._dragging:
+            self.move(global_pos - self._drag_offset)
+
+    def _end_drag(self):
+        self._press_pos = None
+        self._drag_offset = None
+        self._dragging = False
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
-            self._press_pos = e.globalPosition().toPoint()
-            self._drag_offset = self._press_pos - self.frameGeometry().topLeft()
-            self._dragging = False
+            self._begin_drag(e.globalPosition().toPoint())
             e.accept()
 
     def mouseMoveEvent(self, e):
         if self._press_pos is None or not (e.buttons() & Qt.LeftButton):
             return
-        cur = e.globalPosition().toPoint()
-        if not self._dragging and (cur - self._press_pos).manhattanLength() > DRAG_THRESHOLD:
-            self._dragging = True
-        if self._dragging:
-            self.move(cur - self._drag_offset)
-            e.accept()
+        self._continue_drag(e.globalPosition().toPoint())
+        e.accept()
 
     def mouseReleaseEvent(self, e):
-        if self._press_pos is not None and not self._dragging:
+        if self._ui_mode == "voice" and self._press_pos is not None and not self._dragging:
             self._toggle_voice()
-        self._press_pos = None
-        self._drag_offset = None
-        self._dragging = False
+        self._end_drag()
         e.accept()
 
     def contextMenuEvent(self, e):
+        self._show_context_menu(e.globalPos())
+        e.accept()
+
+    def _show_context_menu(self, global_pos):
         menu = QMenu(self)
-        cli_action = menu.addAction("cli")
+        text_action = menu.addAction("文本模式")
+        voice_action = menu.addAction("语音模式")
+        clear_action = menu.addAction("清除上下文")
+        menu.addSeparator()
         quit_action = menu.addAction("退出")
-        chosen = menu.exec(e.globalPos())
-        if chosen is cli_action:
-            self._toggle_panel()
+        chosen = menu.exec(global_pos)
+        if chosen is text_action:
+            self._switch_to_text_mode()
+        elif chosen is voice_action:
+            self._switch_to_voice_mode()
+        elif chosen is clear_action:
+            self._clear_context()
         elif chosen is quit_action:
             QApplication.quit()
 

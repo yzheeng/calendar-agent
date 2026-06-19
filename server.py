@@ -92,9 +92,10 @@ async def ws_endpoint(ws: WebSocket):
         while True:
             event = await queue.get()
             await ws.send_json(event)
-
+    # sender loop
     sender_task = asyncio.create_task(sender())
     try:
+        # receiver loop
         while True:
             msg = await ws.receive_json()
             t = msg.get("type")
